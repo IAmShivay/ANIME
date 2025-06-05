@@ -1,16 +1,59 @@
-import { Product } from '../types';
-import { Button } from './ui/Button';
-import { Card } from './ui/Card';
-import { Badge } from './ui/Badge';
-import { ShoppingCart, Heart, Star } from 'lucide-react';
-import { motion } from 'framer-motion';
+'use client'
+
+import { Product } from '@/types'
+import { Button } from './ui/Button'
+import { Card } from './ui/Card'
+import { Badge } from './ui/Badge'
+import { ShoppingCart, Heart, Star } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { useDispatch, useSelector } from 'react-redux'
+import { addToCart } from '@/store/slices/cartSlice'
+import { toggleWishlistItem, selectIsInWishlist } from '@/store/slices/wishlistSlice'
+import Image from 'next/image'
+import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 interface ProductCardProps {
-  product: Product;
-  onAddToCart: (product: Product) => void;
+  product: Product
+  onAddToCart?: (product: Product) => void
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
+export const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
+  const dispatch = useDispatch()
+  const isInWishlist = useSelector(selectIsInWishlist(product._id))
+
+  const handleAddToCart = () => {
+    try {
+      dispatch(addToCart({
+        id: product._id,
+        name: product.name,
+        price: product.price,
+        image: product.images[0],
+        maxQuantity: product.inventory.quantity,
+      }))
+      toast.success('Added to cart!')
+      onAddToCart?.(product)
+    } catch (error) {
+      toast.error('Failed to add to cart')
+    }
+  }
+
+  const handleToggleWishlist = () => {
+    dispatch(toggleWishlistItem({
+      id: product._id,
+      name: product.name,
+      price: product.price,
+      image: product.images[0],
+      category: product.category,
+      subCategory: product.subCategory,
+    }))
+
+    if (isInWishlist) {
+      toast.success('Removed from wishlist')
+    } else {
+      toast.success('Added to wishlist')
+    }
+  }
   return (
     <Card className="group h-full flex flex-col">
       <div className="flex flex-col h-full">
@@ -20,19 +63,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
             transition={{ duration: 0.3 }}
             className="h-full w-full"
           >
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
+            <Link href={`/products/${product._id}`}>
+              <Image
+                src={product.images[0]}
+                alt={product.name}
+                width={300}
+                height={300}
+                className="w-full h-full object-cover cursor-pointer"
+              />
+            </Link>
           </motion.div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
+            onClick={handleToggleWishlist}
             className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-colors"
           >
-            <Heart className="w-5 h-5 text-rose-500" />
+            <Heart className={`w-5 h-5 ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
           </motion.button>
           <div className="absolute bottom-4 left-4">
             <Badge variant="success" className="bg-emerald-500 text-white">
@@ -70,11 +118,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
             <Button
               variant="primary"
               size="lg"
-              onClick={() => onAddToCart(product)}
-              className="w-full bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-700 hover:to-violet-700 flex items-center justify-center gap-2 transform transition-all duration-300"
+              onClick={handleAddToCart}
+              disabled={product.inventory.quantity === 0}
+              className="w-full bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-700 hover:to-violet-700 flex items-center justify-center gap-2 transform transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ShoppingCart className="w-5 h-5" />
-              Add to Cart
+              {product.inventory.quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
             </Button>
           </motion.div>
         </div>

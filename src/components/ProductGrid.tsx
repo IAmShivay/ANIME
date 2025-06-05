@@ -1,6 +1,8 @@
-import { Product } from '../types';
-import { ProductCard } from './ProductCard';
-import { motion } from 'framer-motion';
+'use client'
+
+import { Product } from '@/types'
+import { ProductCard } from './ProductCard'
+import { motion } from 'framer-motion'
 
 interface ProductGridProps {
   products: Product[];

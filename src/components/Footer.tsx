@@ -1,7 +1,10 @@
-import { Facebook, Instagram, Twitter, Youtube, Mail, MapPin, Phone } from 'lucide-react';
-import { motion } from 'framer-motion';
+'use client'
 
-export const Footer: React.FC = () => {
+import { Facebook, Instagram, Twitter, Youtube, Mail, MapPin, Phone } from 'lucide-react'
+import { motion } from 'framer-motion'
+import Link from 'next/link'
+
+export const Footer = () => {
   const socialLinks = [
     { icon: Facebook, href: '#', label: 'Facebook' },
     { icon: Instagram, href: '#', label: 'Instagram' },
@@ -40,11 +43,16 @@ export const Footer: React.FC = () => {
           <div>
             <h4 className="text-lg font-semibold mb-4 text-fuchsia-400">Quick Links</h4>
             <ul className="space-y-3">
-              {['New Arrivals', 'Best Sellers', 'Special Offers', 'Gift Cards'].map((item) => (
-                <li key={item}>
-                  <a href="#" className="text-gray-400 hover:text-fuchsia-400 transition-colors inline-block">
-                    {item}
-                  </a>
+              {[
+                { name: 'New Arrivals', href: '/shop?sort=newest' },
+                { name: 'Best Sellers', href: '/shop?sort=popular' },
+                { name: 'Special Offers', href: '/shop?sale=true' },
+                { name: 'Gift Cards', href: '/gift-cards' }
+              ].map((item) => (
+                <li key={item.name}>
+                  <Link href={item.href} className="text-gray-400 hover:text-fuchsia-400 transition-colors inline-block">
+                    {item.name}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -53,11 +61,16 @@ export const Footer: React.FC = () => {
           <div>
             <h4 className="text-lg font-semibold mb-4 text-fuchsia-400">Categories</h4>
             <ul className="space-y-3">
-              {['Anime Collection', 'Science Gear', 'Limited Editions', 'Accessories'].map((item) => (
-                <li key={item}>
-                  <a href="#" className="text-gray-400 hover:text-fuchsia-400 transition-colors inline-block">
-                    {item}
-                  </a>
+              {[
+                { name: 'Anime Collection', href: '/shop?category=anime' },
+                { name: 'Science Gear', href: '/shop?category=science' },
+                { name: 'Limited Editions', href: '/shop?category=limited' },
+                { name: 'Accessories', href: '/shop?category=accessories' }
+              ].map((item) => (
+                <li key={item.name}>
+                  <Link href={item.href} className="text-gray-400 hover:text-fuchsia-400 transition-colors inline-block">
+                    {item.name}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -88,15 +101,18 @@ export const Footer: React.FC = () => {
               © 2024 AnimeScience. All rights reserved.
             </p>
             <div className="flex gap-6">
-              <a href="#" className="text-sm text-gray-400 hover:text-fuchsia-400 transition-colors">
+              <Link href="/policies/privacy" className="text-sm text-gray-400 hover:text-fuchsia-400 transition-colors">
                 Privacy Policy
-              </a>
-              <a href="#" className="text-sm text-gray-400 hover:text-fuchsia-400 transition-colors">
+              </Link>
+              <Link href="/policies/terms" className="text-sm text-gray-400 hover:text-fuchsia-400 transition-colors">
                 Terms of Service
-              </a>
-              <a href="#" className="text-sm text-gray-400 hover:text-fuchsia-400 transition-colors">
+              </Link>
+              <Link href="/policies/refund" className="text-sm text-gray-400 hover:text-fuchsia-400 transition-colors">
+                Refund Policy
+              </Link>
+              <Link href="/policies/shipping" className="text-sm text-gray-400 hover:text-fuchsia-400 transition-colors">
                 Shipping Info
-              </a>
+              </Link>
             </div>
           </div>
         </div>

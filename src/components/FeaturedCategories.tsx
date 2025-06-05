@@ -1,3 +1,5 @@
+'use client';
+
 import { motion } from 'framer-motion';
 import { Sword, Shirt, Gift } from 'lucide-react';
 
