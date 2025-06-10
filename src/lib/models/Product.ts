@@ -89,11 +89,11 @@ const ProductSchema = new Schema(
     category: {
       type: String,
       required: [true, 'Product category is required'],
+      enum: ['anime', 'streetwear', 'accessories', 'limited'],
       trim: true,
     },
     subCategory: {
       type: String,
-      required: [true, 'Product subcategory is required'],
       trim: true,
     },
     tags: [{
@@ -131,6 +131,33 @@ const ProductSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    rating: {
+      average: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 5,
+      },
+      count: {
+        type: Number,
+        default: 0,
+      },
+    },
+    shipping: {
+      weight: {
+        type: Number,
+        min: 0,
+      },
+      dimensions: {
+        length: Number,
+        width: Number,
+        height: Number,
+      },
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
   },
   {
     timestamps: true,
@@ -166,4 +193,5 @@ ProductSchema.pre('save', function(next) {
   next()
 })
 
-export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema)
+export const Product = mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema)
+export default Product

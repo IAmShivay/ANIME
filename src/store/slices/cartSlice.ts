@@ -29,20 +29,25 @@ const cartSlice = createSlice({
   name: 'cart',
   initialState,
   reducers: {
-    addToCart: (state, action: PayloadAction<Omit<CartItem, 'quantity'>>) => {
+    addToCart: (state, action: PayloadAction<Omit<CartItem, 'maxQuantity'> & { maxQuantity?: number }>) => {
+      const { quantity = 1, maxQuantity = 99, ...itemData } = action.payload
+
       const existingItem = state.items.find(
-        (item) => 
-          item.id === action.payload.id && 
-          item.size === action.payload.size && 
-          item.color === action.payload.color
+        (item) =>
+          item.id === itemData.id &&
+          item.size === itemData.size &&
+          item.color === itemData.color
       )
 
       if (existingItem) {
-        if (existingItem.quantity < existingItem.maxQuantity) {
-          existingItem.quantity += 1
-        }
+        const newQuantity = existingItem.quantity + quantity
+        existingItem.quantity = Math.min(newQuantity, existingItem.maxQuantity)
       } else {
-        state.items.push({ ...action.payload, quantity: 1 })
+        state.items.push({
+          ...itemData,
+          quantity,
+          maxQuantity
+        })
       }
 
       cartSlice.caseReducers.calculateTotals(state)

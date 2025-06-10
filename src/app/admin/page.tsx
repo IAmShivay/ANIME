@@ -2,21 +2,26 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { 
-  Package, 
-  ShoppingCart, 
-  Users, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  Package,
+  ShoppingCart,
+  Users,
+  DollarSign,
+  TrendingUp,
   TrendingDown,
   Eye,
   Edit,
-  Plus
+  Plus,
+  Star,
+  Clock,
+  CheckCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import { useSelector } from 'react-redux'
 import { selectCurrentUser, selectIsAuthenticated } from '@/store/slices/authSlice'
-import { useRouter } from 'next/navigation'
+import { selectCurrencySymbol } from '@/store/slices/settingsSlice'
+import { AdminLayout } from '@/components/admin/AdminLayout'
+import { DashboardSkeleton } from '@/components/ui/SkeletonLoader'
 
 interface DashboardStats {
   totalProducts: number
@@ -42,22 +47,17 @@ interface RecentOrder {
 }
 
 export default function AdminDashboard() {
-  const router = useRouter()
   const isAuthenticated = useSelector(selectIsAuthenticated)
   const currentUser = useSelector(selectCurrentUser)
-  
+  const currencySymbol = useSelector(selectCurrencySymbol)
+
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!isAuthenticated || currentUser?.role !== 'admin') {
-      router.push('/auth/login')
-      return
-    }
-
     fetchDashboardData()
-  }, [isAuthenticated, currentUser, router])
+  }, [])
 
   const fetchDashboardData = async () => {
     try {
@@ -79,22 +79,11 @@ export default function AdminDashboard() {
     }
   }
 
-  if (!isAuthenticated || currentUser?.role !== 'admin') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600">You need admin privileges to access this page.</p>
-        </div>
-      </div>
-    )
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
-      </div>
+      <AdminLayout>
+        <DashboardSkeleton />
+      </AdminLayout>
     )
   }
 
@@ -125,7 +114,7 @@ export default function AdminDashboard() {
     },
     {
       title: 'Total Revenue',
-      value: `$${(stats?.totalRevenue || 0).toLocaleString()}`,
+      value: `${currencySymbol}${(stats?.totalRevenue || 0).toLocaleString()}`,
       icon: DollarSign,
       color: 'bg-yellow-500',
       change: `${stats?.revenueGrowth > 0 ? '+' : ''}${stats?.revenueGrowth.toFixed(1)}%`,
@@ -134,42 +123,31 @@ export default function AdminDashboard() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+    <AdminLayout>
+      <div className="p-6 h-full">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-gray-600">Welcome back, {currentUser?.name}</p>
+              <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+              <p className="text-gray-600 mt-1">Welcome back, {currentUser?.name}</p>
             </div>
-            <div className="flex gap-4">
-              <Link href="/admin/products">
+            <div className="flex gap-3">
+              <Link href="/admin/products/new">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all duration-300"
                 >
                   <Plus className="w-4 h-4" />
                   Add Product
                 </motion.button>
               </Link>
-              <Link href="/">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  <Eye className="w-4 h-4" />
-                  View Site
-                </motion.button>
-              </Link>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Content */}
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {statCards.map((stat, index) => (
@@ -306,7 +284,7 @@ export default function AdminDashboard() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${order.pricing.total.toFixed(2)}
+                      {currencySymbol}{order.pricing.total.toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(order.createdAt).toLocaleDateString()}
@@ -318,6 +296,6 @@ export default function AdminDashboard() {
           </div>
         </motion.div>
       </div>
-    </div>
+    </AdminLayout>
   )
 }

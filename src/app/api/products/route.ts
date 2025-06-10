@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const maxPrice = searchParams.get('maxPrice')
 
     // Build query
-    const query: any = { status: 'active' }
+    const query: any = {}
 
     if (category) {
       query.category = category

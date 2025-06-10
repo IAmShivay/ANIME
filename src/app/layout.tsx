@@ -3,30 +3,30 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 import { Toaster } from 'react-hot-toast'
-import { Cart } from '@/components/Cart'
+import { CartSidebar } from '@/components/CartSidebar'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'AnimeScience - Premium Anime Clothing & Collectibles',
-  description: 'Discover premium anime clothing, collectibles, and accessories. Your premier destination for anime and science-themed merchandise.',
-  keywords: 'anime clothing, anime merchandise, collectibles, anime fashion, science themed',
-  authors: [{ name: 'AnimeScience Team' }],
-  creator: 'AnimeScience',
-  publisher: 'AnimeScience',
+  title: 'Bindass - Premium Anime Fashion & Streetwear',
+  description: 'Discover premium anime-inspired fashion, streetwear, and accessories. Where anime culture meets contemporary style.',
+  keywords: 'anime fashion, streetwear, anime clothing, bindass, anime merchandise, anime streetwear',
+  authors: [{ name: 'Bindass Team' }],
+  creator: 'Bindass',
+  publisher: 'Bindass',
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://animescience.com',
-    title: 'AnimeScience - Premium Anime Clothing & Collectibles',
-    description: 'Discover premium anime clothing, collectibles, and accessories.',
-    siteName: 'AnimeScience',
+    url: 'https://bindass.com',
+    title: 'Bindass - Premium Anime Fashion & Streetwear',
+    description: 'Discover premium anime-inspired fashion, streetwear, and accessories.',
+    siteName: 'Bindass',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AnimeScience - Premium Anime Clothing & Collectibles',
-    description: 'Discover premium anime clothing, collectibles, and accessories.',
-    creator: '@animescience',
+    title: 'Bindass - Premium Anime Fashion & Streetwear',
+    description: 'Discover premium anime-inspired fashion, streetwear, and accessories.',
+    creator: '@bindass',
   },
   robots: {
     index: true,
@@ -51,7 +51,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <Providers>
           {children}
-          <Cart />
+          <CartSidebar />
           <Toaster
             position="top-right"
             toastOptions={{

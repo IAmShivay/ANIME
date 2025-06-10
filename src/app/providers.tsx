@@ -2,7 +2,10 @@
 
 import { Provider } from 'react-redux'
 import { SessionProvider } from 'next-auth/react'
-import { store } from '@/store'
+import { PersistGate } from 'redux-persist/integration/react'
+import { store, persistor } from '@/store'
+import { AuthInitializer } from '@/components/AuthInitializer'
+import { SettingsInitializer } from '@/components/SettingsInitializer'
 import { Session } from 'next-auth'
 
 interface ProvidersProps {
@@ -14,7 +17,11 @@ export function Providers({ children, session }: ProvidersProps) {
   return (
     <SessionProvider session={session}>
       <Provider store={store}>
-        {children}
+        <PersistGate loading={null} persistor={persistor}>
+          <AuthInitializer />
+          <SettingsInitializer />
+          {children}
+        </PersistGate>
       </Provider>
     </SessionProvider>
   )

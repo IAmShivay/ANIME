@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
+import bcrypt from 'bcryptjs'
 import connectDB from '@/lib/mongodb'
 import User from '@/lib/models/User'
 
@@ -8,6 +9,8 @@ export async function POST(request: NextRequest) {
     await connectDB()
 
     const { email, password } = await request.json()
+
+    console.log('Login attempt for:', email)
 
     // Validate input
     if (!email || !password) {
@@ -22,6 +25,8 @@ export async function POST(request: NextRequest) {
 
     // Find user and include password for comparison
     const user = await User.findOne({ email: email.toLowerCase() }).select('+password')
+    console.log('User found:', user ? 'Yes' : 'No')
+
     if (!user) {
       return NextResponse.json(
         {
@@ -32,8 +37,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check password
-    const isPasswordValid = await user.comparePassword(password)
+    // Check password using bcrypt directly as fallback
+    let isPasswordValid = false
+    try {
+      if (user.comparePassword) {
+        isPasswordValid = await user.comparePassword(password)
+      } else {
+        // Fallback to direct bcrypt comparison
+        isPasswordValid = await bcrypt.compare(password, user.password)
+      }
+    } catch (error) {
+      console.error('Password comparison error:', error)
+      // Fallback to direct bcrypt comparison
+      isPasswordValid = await bcrypt.compare(password, user.password)
+    }
+
+    console.log('Password valid:', isPasswordValid)
+
     if (!isPasswordValid) {
       return NextResponse.json(
         {

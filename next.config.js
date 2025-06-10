@@ -1,15 +1,51 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Performance optimizations
   experimental: {
-    appDir: true,
+    optimizeCss: true,
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
+
+  // Image optimization
   images: {
     domains: [
       'images.unsplash.com',
       'localhost',
       'res.cloudinary.com',
+      'upload.wikimedia.org'
     ],
+    formats: ['image/webp', 'image/avif'],
+    minimumCacheTTL: 60,
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
+
+  // Compression
+  compress: true,
+  // Webpack optimizations
+  webpack: (config, { dev, isServer }) => {
+    // Optimize for production
+    if (!dev && !isServer) {
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+          },
+          common: {
+            name: 'common',
+            minChunks: 2,
+            chunks: 'all',
+            enforce: true,
+          },
+        },
+      }
+    }
+    return config
+  },
+
   env: {
     MONGODB_URI: process.env.MONGODB_URI,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,

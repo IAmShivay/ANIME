@@ -7,7 +7,7 @@ import { Navbar } from '@/components/Navigation'
 import { Footer } from '@/components/Footer'
 import { ProductGrid } from '@/components/ProductGrid'
 import { CategoryFilter } from '@/components/CategoryFilter'
-import { useGetProductsQuery } from '@/store/api/productsApi'
+import { formatPrice, formatDiscount } from '@/lib/utils/currency'
 import { useSearchParams } from 'next/navigation'
 
 export default function ShopPage() {
@@ -28,19 +28,49 @@ export default function ShopPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showFilters, setShowFilters] = useState(false)
 
-  const { data: productsData, isLoading, error } = useGetProductsQuery({
-    page: currentPage,
-    limit: 12,
-    category: selectedCategory || undefined,
-    search: searchQuery || undefined,
-    sort: sortBy,
-    order: sortOrder,
-    minPrice: priceRange.min,
-    maxPrice: priceRange.max,
-  })
+  const [products, setProducts] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [pagination, setPagination] = useState(null)
+  const [error, setError] = useState(false)
 
-  const products = productsData?.data || []
-  const pagination = productsData?.pagination
+  useEffect(() => {
+    fetchProducts()
+  }, [currentPage, selectedCategory, searchQuery, sortBy, sortOrder, priceRange])
+
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true)
+      setError(false)
+      const queryParams = new URLSearchParams()
+
+      queryParams.append('page', currentPage.toString())
+      queryParams.append('limit', '12')
+      if (selectedCategory) queryParams.append('category', selectedCategory)
+      if (searchQuery) queryParams.append('search', searchQuery)
+      queryParams.append('sort', sortBy)
+      queryParams.append('order', sortOrder)
+      if (priceRange.min) queryParams.append('minPrice', priceRange.min.toString())
+      if (priceRange.max) queryParams.append('maxPrice', priceRange.max.toString())
+
+      const response = await fetch(`/api/products?${queryParams.toString()}`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setProducts(data.data || [])
+          setPagination(data.pagination || null)
+        } else {
+          setError(true)
+        }
+      } else {
+        setError(true)
+      }
+    } catch (err) {
+      console.error('Error fetching products:', err)
+      setError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const categories = ['anime', 'science', 'accessories', 'limited']
 

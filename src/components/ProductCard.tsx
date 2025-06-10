@@ -11,6 +11,7 @@ import { addToCart } from '@/store/slices/cartSlice'
 import { toggleWishlistItem, selectIsInWishlist } from '@/store/slices/wishlistSlice'
 import Image from 'next/image'
 import Link from 'next/link'
+import { formatPrice } from '@/lib/utils/currency'
 import toast from 'react-hot-toast'
 
 interface ProductCardProps {
@@ -105,7 +106,7 @@ export const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
             </div>
             <div className="flex flex-col items-end">
               <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-600 to-violet-600">
-                ${product.price}
+                {formatPrice(product.price)}
               </span>
               <div className="flex items-center gap-1 mt-1">
                 <Star className="w-4 h-4 text-amber-400 fill-current" />
