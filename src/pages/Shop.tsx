@@ -4,7 +4,7 @@ import { CategoryFilter } from '../components/CategoryFilter';
 import { products } from '../data/products';
 import { Product } from '../types';
 
-export const Shop: React.FC = () => {
+export default function Shop() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const categories = Array.from(new Set(products.map(product => product.category)));
 

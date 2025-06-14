@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { Sparkles, Heart, Star } from 'lucide-react';
 
-export const About: React.FC = () => {
+export default function About() {
   return (
     <main className="py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

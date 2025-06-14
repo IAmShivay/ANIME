@@ -3,7 +3,7 @@ import { FeaturedCategories } from '../components/FeaturedCategories';
 import { FeaturedProducts } from '../components/FeaturedProducts';
 import { Newsletter } from '../components/Newsletter';
 
-export const Home: React.FC = () => {
+export default function Home() {
   return (
     <main>
       <Hero />
