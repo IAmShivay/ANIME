@@ -16,8 +16,8 @@ import {
   MessageSquare,
   Star
 } from 'lucide-react'
-import { Navbar } from '@/components/Navigation'
-import { Footer } from '@/components/Footer'
+import Navbar from '@/components/Navigation'
+import Footer from '@/components/Footer'
 import { useSelector, useDispatch } from 'react-redux'
 import { selectCurrentUser, selectIsAuthenticated, logout } from '@/store/slices/authSlice'
 import { selectWishlistItems } from '@/store/slices/wishlistSlice'

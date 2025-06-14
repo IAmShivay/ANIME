@@ -5,8 +5,8 @@ import { FeaturedCategories } from '@/components/FeaturedCategories'
 import { MarketplaceAvailability } from '@/components/MarketplaceAvailability'
 import { Testimonials } from '@/components/Testimonials'
 import { Newsletter } from '@/components/Newsletter'
-import { Navbar } from '@/components/Navigation'
-import { Footer } from '@/components/Footer'
+import Navbar from '@/components/Navigation'
+import Footer from '@/components/Footer'
 
 export const metadata: Metadata = {
   title: 'Bindass - Premium Anime Fashion & Streetwear',

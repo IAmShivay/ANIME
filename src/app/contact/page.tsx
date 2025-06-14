@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Mail, Phone, MapPin, Clock, Send, MessageCircle } from 'lucide-react'
-import { Navbar } from '@/components/Navigation'
-import { Footer } from '@/components/Footer'
+import Navbar from '@/components/Navigation'
+import Footer from '@/components/Footer'
 import toast from 'react-hot-toast'
 
 export default function ContactPage() {

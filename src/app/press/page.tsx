@@ -2,8 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { Newspaper, Download, Mail, Calendar } from 'lucide-react'
-import { Navbar } from '@/components/Navigation'
-import { Footer } from '@/components/Footer'
+import Navbar from '@/components/Navigation'
+import Footer from '@/components/Footer'
 
 export default function PressPage() {
   return (

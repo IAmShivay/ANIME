@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Navbar } from '@/components/Navigation'
-import { Footer } from '@/components/Footer'
+import Navbar from '@/components/Navigation'
+import Footer from '@/components/Footer'
 import { Calendar, FileText } from 'lucide-react'
 
 interface Policy {

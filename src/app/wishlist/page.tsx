@@ -2,8 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { Heart, ShoppingCart, Trash2, ArrowRight } from 'lucide-react'
-import { Navbar } from '@/components/Navigation'
-import { Footer } from '@/components/Footer'
+import Navbar from '@/components/Navigation'
+import Footer from '@/components/Footer'
 import { useSelector, useDispatch } from 'react-redux'
 import { selectWishlistItems, removeFromWishlist, clearWishlist } from '@/store/slices/wishlistSlice'
 import { addToCart } from '@/store/slices/cartSlice'

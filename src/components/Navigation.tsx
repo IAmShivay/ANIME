@@ -11,7 +11,7 @@ import { selectWishlistItemsCount } from '@/store/slices/wishlistSlice'
 import { selectIsAuthenticated, selectCurrentUser } from '@/store/slices/authSlice'
 import Image from 'next/image'
 
-export const Navbar = () => {
+export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const pathname = usePathname()

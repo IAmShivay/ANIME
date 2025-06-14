@@ -14,8 +14,8 @@ import {
   Truck,
   Shield
 } from 'lucide-react'
-import { Navbar } from '@/components/Navigation'
-import { Footer } from '@/components/Footer'
+import Navbar from '@/components/Navigation'
+import Footer from '@/components/Footer'
 import { useSelector, useDispatch } from 'react-redux'
 import { selectCartItems, selectCartTotal, clearCart } from '@/store/slices/cartSlice'
 import { selectCurrentUser, selectIsAuthenticated } from '@/store/slices/authSlice'

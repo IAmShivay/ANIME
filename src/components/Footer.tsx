@@ -12,7 +12,7 @@ import {
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 
-export const Footer = () => {
+export default function Footer() {
   const socialLinks = [
     { icon: Facebook, href: '#', label: 'Facebook' },
     { icon: Instagram, href: '#', label: 'Instagram' },

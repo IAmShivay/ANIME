@@ -5,8 +5,8 @@ import { motion } from 'framer-motion'
 import { Star, Filter, Search, ChevronDown, Verified, Quote, Calendar, User } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Navbar } from '@/components/Navigation'
-import { Footer } from '@/components/Footer'
+import Navbar from '@/components/Navigation'
+import Footer from '@/components/Footer'
 
 interface Review {
   _id: string

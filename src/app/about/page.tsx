@@ -2,8 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { Heart, Users, Award, Zap, Star, Target } from 'lucide-react'
-import { Navbar } from '@/components/Navigation'
-import { Footer } from '@/components/Footer'
+import Navbar from '@/components/Navigation'
+import Footer from '@/components/Footer'
 import Image from 'next/image'
 
 export default function AboutPage() {
