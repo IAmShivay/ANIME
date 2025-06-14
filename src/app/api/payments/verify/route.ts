@@ -3,12 +3,37 @@ import crypto from 'crypto'
 import connectDB from '@/lib/mongodb'
 import Order from '@/lib/models/Order'
 
+// Define interfaces
+interface VerifyPaymentRequest {
+  razorpay_order_id: string
+  razorpay_payment_id: string
+  razorpay_signature: string
+  orderId?: string
+}
+
+interface VerifyPaymentSuccessResponse {
+  success: true
+  message: string
+  data: {
+    orderId?: string
+    orderNumber?: string
+    paymentId: string
+    status: string
+  }
+}
+
+interface VerifyPaymentErrorResponse {
+  success: false
+  error: string
+  message?: string
+}
+
 // POST /api/payments/verify - Verify Razorpay payment
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse<VerifyPaymentSuccessResponse | VerifyPaymentErrorResponse>> {
   try {
     await connectDB()
 
-    const body = await request.json()
+    const body: VerifyPaymentRequest = await request.json()
     const {
       razorpay_order_id,
       razorpay_payment_id,

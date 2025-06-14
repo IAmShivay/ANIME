@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer'
 
 // Create reusable transporter object using SMTP transport
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_SERVER_HOST,
   port: parseInt(process.env.EMAIL_SERVER_PORT || '587'),
   secure: false, // true for 465, false for other ports
@@ -37,23 +37,23 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions) {
 }
 
 export async function sendWelcomeEmail(userEmail: string, userName: string) {
-  const subject = 'Welcome to AnimeScience!'
+  const subject = 'Welcome to Bindass!'
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to AnimeScience!</h1>
+        <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to Bindass!</h1>
       </div>
-      
+
       <div style="padding: 40px 20px; background-color: #f8f9fa;">
         <h2 style="color: #333; margin-bottom: 20px;">Hello ${userName}!</h2>
-        
+
         <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-          Thank you for joining AnimeScience! We're excited to have you as part of our community of anime and science enthusiasts.
+          Thank you for joining Bindass! We're excited to have you as part of our community of anime fashion enthusiasts.
         </p>
-        
+
         <p style="color: #666; line-height: 1.6; margin-bottom: 30px;">
-          Explore our premium collection of anime merchandise, collectibles, and science-themed accessories. 
-          Get ready to express your passion with our exclusive designs!
+          Explore our premium collection of anime fashion, streetwear, and exclusive merchandise.
+          Get ready to express your passion with our unique designs!
         </p>
         
         <div style="text-align: center; margin: 30px 0;">
@@ -81,10 +81,39 @@ export async function sendWelcomeEmail(userEmail: string, userName: string) {
   return sendEmail({ to: userEmail, subject, html })
 }
 
+// Define order interface for email
+interface OrderForEmail {
+  _id: string
+  orderNumber: string
+  items: Array<{
+    product: {
+      name: string
+    }
+    quantity: number
+    total: number
+  }>
+  pricing: {
+    subtotal: number
+    shipping: number
+    tax: number
+    total: number
+  }
+  shippingAddress: {
+    firstName: string
+    lastName: string
+    address1: string
+    address2?: string
+    city: string
+    state: string
+    zipCode: string
+    country: string
+  }
+}
+
 export async function sendOrderConfirmationEmail(
-  userEmail: string, 
-  userName: string, 
-  order: any
+  userEmail: string,
+  userName: string,
+  order: OrderForEmail
 ) {
   const subject = `Order Confirmation - ${order.orderNumber}`
   const html = `
@@ -104,34 +133,34 @@ export async function sendOrderConfirmationEmail(
         <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="color: #333; margin-top: 0;">Order Details</h3>
           
-          ${order.items.map((item: any) => `
+          ${order.items.map((item) => `
             <div style="border-bottom: 1px solid #eee; padding: 15px 0; display: flex; align-items: center;">
               <div style="flex: 1;">
                 <h4 style="margin: 0 0 5px 0; color: #333;">${item.product.name}</h4>
                 <p style="margin: 0; color: #666; font-size: 14px;">Quantity: ${item.quantity}</p>
               </div>
               <div style="text-align: right;">
-                <p style="margin: 0; font-weight: bold; color: #333;">$${item.total.toFixed(2)}</p>
+                <p style="margin: 0; font-weight: bold; color: #333;">₹${item.total.toFixed(2)}</p>
               </div>
             </div>
           `).join('')}
-          
+
           <div style="padding-top: 15px; border-top: 2px solid #333;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
               <span style="color: #666;">Subtotal:</span>
-              <span style="color: #333;">$${order.pricing.subtotal.toFixed(2)}</span>
+              <span style="color: #333;">₹${order.pricing.subtotal.toFixed(2)}</span>
             </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
               <span style="color: #666;">Shipping:</span>
-              <span style="color: #333;">$${order.pricing.shipping.toFixed(2)}</span>
+              <span style="color: #333;">₹${order.pricing.shipping.toFixed(2)}</span>
             </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
               <span style="color: #666;">Tax:</span>
-              <span style="color: #333;">$${order.pricing.tax.toFixed(2)}</span>
+              <span style="color: #333;">₹${order.pricing.tax.toFixed(2)}</span>
             </div>
             <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px;">
               <span style="color: #333;">Total:</span>
-              <span style="color: #333;">$${order.pricing.total.toFixed(2)}</span>
+              <span style="color: #333;">₹${order.pricing.total.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -173,7 +202,7 @@ export async function sendOrderConfirmationEmail(
 }
 
 export async function sendPasswordResetEmail(userEmail: string, resetToken: string) {
-  const subject = 'Reset Your Password - AnimeScience'
+  const subject = 'Reset Your Password - Bindass'
   const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${resetToken}`
   
   const html = `

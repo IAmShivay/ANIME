@@ -82,15 +82,16 @@ export const WebVitalsReporter = () => {
     }
 
     // Dynamic import to avoid SSR issues
-    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-      getCLS(reportWebVitals)
-      getFID(reportWebVitals)
-      getFCP(reportWebVitals)
-      getLCP(reportWebVitals)
-      getTTFB(reportWebVitals)
-    }).catch(() => {
-      // web-vitals not available
-    })
+    // Temporarily disabled due to package issues
+    // import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+    //   getCLS(reportWebVitals)
+    //   getFID(reportWebVitals)
+    //   getFCP(reportWebVitals)
+    //   getLCP(reportWebVitals)
+    //   getTTFB(reportWebVitals)
+    // }).catch(() => {
+    //   // web-vitals not available
+    // })
   }, [])
 
   return null

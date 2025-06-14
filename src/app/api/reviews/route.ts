@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     const total = await Review.countDocuments(query)
     
     // Get review statistics
-    const stats = await Review.getReviewStats(productId)
+    const stats = await Review.getReviewStats(productId || undefined)
     
     return NextResponse.json({
       success: true,

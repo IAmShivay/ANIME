@@ -13,12 +13,14 @@ import {
   Clock,
   AlertCircle,
   Download,
-  RefreshCw
+  RefreshCw,
+  X
 } from 'lucide-react'
 import { AdminLayout } from '@/components/admin/AdminLayout'
 import { useSelector } from 'react-redux'
 import { selectCurrencySymbol } from '@/store/slices/settingsSlice'
 import { TableSkeleton } from '@/components/ui/SkeletonLoader'
+import toast from 'react-hot-toast'
 
 interface Order {
   _id: string
@@ -26,30 +28,44 @@ interface Order {
   user: {
     name: string
     email: string
+    phone?: string
+  }
+  customer: {
+    name: string
+    email: string
+    phone?: string
   }
   items: Array<{
     product: {
       name: string
       images: string[]
     }
+    name: string
     quantity: number
     price: number
+    size?: string
+    color?: string
   }>
   pricing: {
     total: number
   }
+  total: number
   orderStatus: string
+  status: string
   paymentMethod: {
     type: string
     status: string
   }
+  paymentStatus: string
   shippingAddress: {
     firstName: string
     lastName: string
     address1: string
+    street: string
     city: string
     state: string
     zipCode: string
+    country?: string
   }
   createdAt: string
   updatedAt: string
@@ -63,7 +79,7 @@ export default function AdminOrdersPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [viewingOrder, setViewingOrder] = useState<Order | null>(null)
-  const [selectedOrders, setSelectedOrders] = useState<string[]>([])
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
 
   useEffect(() => {
     fetchOrders()
@@ -77,13 +93,16 @@ export default function AdminOrdersPage() {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
       })
-      
+
       if (response.ok) {
         const data = await response.json()
         setOrders(data.data || [])
+      } else {
+        toast.error('Failed to fetch orders')
       }
     } catch (error) {
       console.error('Error fetching orders:', error)
+      toast.error('Error loading orders')
     } finally {
       setLoading(false)
     }
@@ -91,6 +110,7 @@ export default function AdminOrdersPage() {
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
+      setUpdatingStatus(orderId)
       const response = await fetch(`/api/admin/orders/${orderId}`, {
         method: 'PUT',
         headers: {
@@ -99,12 +119,18 @@ export default function AdminOrdersPage() {
         },
         body: JSON.stringify({ orderStatus: newStatus })
       })
-      
+
       if (response.ok) {
+        toast.success(`Order status updated to ${newStatus}`)
         fetchOrders() // Refresh orders
+      } else {
+        toast.error('Failed to update order status')
       }
     } catch (error) {
       console.error('Error updating order status:', error)
+      toast.error('Error updating order status')
+    } finally {
+      setUpdatingStatus(null)
     }
   }
 
@@ -285,12 +311,12 @@ export default function AdminOrdersPage() {
                         {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {order.items[0]?.product.name}
+                        {order.items[0]?.product?.name || order.items[0]?.name || 'Product'}
                         {order.items.length > 1 && ` +${order.items.length - 1} more`}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {currencySymbol}{order.pricing.total.toFixed(2)}
+                      {currencySymbol}{(order.total || order.pricing?.total || 0).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
@@ -298,7 +324,10 @@ export default function AdminOrdersPage() {
                         <select
                           value={order.orderStatus}
                           onChange={(e) => updateOrderStatus(order._id, e.target.value)}
-                          className={`px-2.5 py-0.5 rounded-full text-xs font-medium border focus:ring-2 focus:ring-purple-500 ${getStatusColor(order.orderStatus)}`}
+                          disabled={updatingStatus === order._id}
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-medium border focus:ring-2 focus:ring-purple-500 ${getStatusColor(order.orderStatus)} ${
+                            updatingStatus === order._id ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
                         >
                           <option value="pending">Pending</option>
                           <option value="processing">Processing</option>
@@ -381,27 +410,27 @@ export default function AdminOrdersPage() {
                         <div className="flex justify-between">
                           <span className="text-gray-600">Status:</span>
                           <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            viewingOrder.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                            viewingOrder.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
-                            viewingOrder.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
+                            (viewingOrder.status || viewingOrder.orderStatus) === 'delivered' ? 'bg-green-100 text-green-800' :
+                            (viewingOrder.status || viewingOrder.orderStatus) === 'shipped' ? 'bg-blue-100 text-blue-800' :
+                            (viewingOrder.status || viewingOrder.orderStatus) === 'processing' ? 'bg-yellow-100 text-yellow-800' :
                             'bg-gray-100 text-gray-800'
                           }`}>
-                            {viewingOrder.status}
+                            {viewingOrder.status || viewingOrder.orderStatus}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Payment:</span>
                           <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            viewingOrder.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' :
-                            viewingOrder.paymentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            (viewingOrder.paymentStatus || viewingOrder.paymentMethod?.status) === 'paid' ? 'bg-green-100 text-green-800' :
+                            (viewingOrder.paymentStatus || viewingOrder.paymentMethod?.status) === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                             'bg-red-100 text-red-800'
                           }`}>
-                            {viewingOrder.paymentStatus}
+                            {viewingOrder.paymentStatus || viewingOrder.paymentMethod?.status || 'pending'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Total:</span>
-                          <span className="font-semibold">{currencySymbol}{viewingOrder.total.toFixed(2)}</span>
+                          <span className="font-semibold">{currencySymbol}{(viewingOrder.total || viewingOrder.pricing?.total || 0).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -412,15 +441,15 @@ export default function AdminOrdersPage() {
                       <div className="space-y-2 text-sm">
                         <div>
                           <span className="text-gray-600">Name:</span>
-                          <span className="ml-2 font-medium">{viewingOrder.customer.name}</span>
+                          <span className="ml-2 font-medium">{viewingOrder.customer?.name || viewingOrder.user?.name || 'N/A'}</span>
                         </div>
                         <div>
                           <span className="text-gray-600">Email:</span>
-                          <span className="ml-2">{viewingOrder.customer.email}</span>
+                          <span className="ml-2">{viewingOrder.customer?.email || viewingOrder.user?.email || 'N/A'}</span>
                         </div>
                         <div>
                           <span className="text-gray-600">Phone:</span>
-                          <span className="ml-2">{viewingOrder.customer.phone}</span>
+                          <span className="ml-2">{viewingOrder.customer?.phone || viewingOrder.user?.phone || 'N/A'}</span>
                         </div>
                       </div>
                     </div>
@@ -429,10 +458,10 @@ export default function AdminOrdersPage() {
                     <div className="bg-gray-50 rounded-lg p-4">
                       <h4 className="font-semibold text-gray-900 mb-3">Shipping Address</h4>
                       <div className="text-sm text-gray-700">
-                        <p>{viewingOrder.shippingAddress.street}</p>
-                        <p>{viewingOrder.shippingAddress.city}, {viewingOrder.shippingAddress.state}</p>
-                        <p>{viewingOrder.shippingAddress.zipCode}</p>
-                        <p>{viewingOrder.shippingAddress.country}</p>
+                        <p>{viewingOrder.shippingAddress?.street || viewingOrder.shippingAddress?.address1 || 'N/A'}</p>
+                        <p>{viewingOrder.shippingAddress?.city || 'N/A'}, {viewingOrder.shippingAddress?.state || 'N/A'}</p>
+                        <p>{viewingOrder.shippingAddress?.zipCode || 'N/A'}</p>
+                        <p>{viewingOrder.shippingAddress?.country || 'India'}</p>
                       </div>
                     </div>
                   </div>
@@ -447,9 +476,9 @@ export default function AdminOrdersPage() {
                             <Package className="w-6 h-6 text-gray-400" />
                           </div>
                           <div className="flex-1">
-                            <h5 className="font-medium text-gray-900">{item.name}</h5>
+                            <h5 className="font-medium text-gray-900">{item.name || item.product?.name || 'Product'}</h5>
                             <p className="text-sm text-gray-600">
-                              Size: {item.size} • Color: {item.color}
+                              {item.size && `Size: ${item.size}`} {item.size && item.color && '•'} {item.color && `Color: ${item.color}`}
                             </p>
                             <p className="text-sm text-gray-600">
                               Qty: {item.quantity} × {currencySymbol}{item.price.toFixed(2)}
@@ -470,7 +499,7 @@ export default function AdminOrdersPage() {
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span className="text-gray-600">Subtotal:</span>
-                          <span>{currencySymbol}{(viewingOrder.total - 50).toFixed(2)}</span>
+                          <span>{currencySymbol}{Math.max(0, (viewingOrder.total || viewingOrder.pricing?.total || 0) - 50).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Shipping:</span>
@@ -478,7 +507,7 @@ export default function AdminOrdersPage() {
                         </div>
                         <div className="flex justify-between font-semibold text-base pt-2 border-t border-gray-200">
                           <span>Total:</span>
-                          <span>{currencySymbol}{viewingOrder.total.toFixed(2)}</span>
+                          <span>{currencySymbol}{(viewingOrder.total || viewingOrder.pricing?.total || 0).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>

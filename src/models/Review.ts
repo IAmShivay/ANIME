@@ -1,4 +1,44 @@
-import mongoose from 'mongoose'
+import mongoose, { Document, Model } from 'mongoose'
+
+// Define interfaces
+export interface IReview extends Document {
+  user: mongoose.Types.ObjectId
+  order: mongoose.Types.ObjectId
+  product?: mongoose.Types.ObjectId
+  rating: number
+  title: string
+  comment: string
+  images: Array<{
+    url: string
+    alt: string
+  }>
+  isVerifiedPurchase: boolean
+  isApproved: boolean
+  isFeatured: boolean
+  helpfulVotes: number
+  reportCount: number
+  adminResponse?: {
+    message: string
+    respondedAt: Date
+    respondedBy: mongoose.Types.ObjectId
+  }
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface IReviewModel extends Model<IReview> {
+  getReviewStats(productId?: string): Promise<{
+    totalReviews: number
+    averageRating: number
+    ratingCounts: {
+      5: number
+      4: number
+      3: number
+      2: number
+      1: number
+    }
+  }>
+}
 
 const reviewSchema = new mongoose.Schema({
   user: {
@@ -122,15 +162,15 @@ reviewSchema.pre('save', async function(next) {
       
       // If product is specified, verify it was in the order
       if (this.product) {
-        const productInOrder = order.items.some((item: any) => 
-          item.product.toString() === this.product.toString()
+        const productInOrder = order.items.some((item: any) =>
+          item.product && item.product.toString() === this.product?.toString()
         )
-        
+
         if (!productInOrder) {
           throw new Error('Can only review products you have purchased')
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       return next(error)
     }
   }
@@ -178,6 +218,6 @@ reviewSchema.statics.getReviewStats = async function(productId?: string) {
   }
 }
 
-const Review = mongoose.models.Review || mongoose.model('Review', reviewSchema)
+const Review = (mongoose.models.Review as IReviewModel) || mongoose.model<IReview, IReviewModel>('Review', reviewSchema)
 export default Review
 export { Review }

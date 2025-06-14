@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose'
+import mongoose, { Schema, Document, Model } from 'mongoose'
 
 export interface IOTP extends Document {
   email: string
@@ -10,6 +10,16 @@ export interface IOTP extends Document {
   maxAttempts: number
   createdAt: Date
   updatedAt: Date
+  isExpired: boolean
+  isValid: boolean
+  verify(inputOTP: string): Promise<boolean>
+}
+
+export interface IOTPModel extends Model<IOTP> {
+  generateOTP(): string
+  createOTP(email: string, type?: string): Promise<IOTP>
+  verifyOTP(email: string, inputOTP: string, type?: string): Promise<boolean>
+  cleanupExpired(): Promise<any>
 }
 
 const OTPSchema = new Schema(
@@ -68,7 +78,8 @@ OTPSchema.virtual('isExpired').get(function() {
 
 // Virtual for checking if OTP is valid
 OTPSchema.virtual('isValid').get(function() {
-  return !this.isUsed && !this.isExpired && this.attempts < this.maxAttempts
+  const isExpired = new Date() > this.expiresAt
+  return !this.isUsed && !isExpired && this.attempts < this.maxAttempts
 })
 
 // Static method to generate OTP
@@ -80,8 +91,8 @@ OTPSchema.statics.generateOTP = function() {
 OTPSchema.statics.createOTP = async function(email: string, type: string = 'signup') {
   // Remove any existing OTPs for this email and type
   await this.deleteMany({ email, type })
-  
-  const otp = this.generateOTP()
+
+  const otp = (this as any).generateOTP()
   
   return await this.create({
     email,
@@ -143,4 +154,4 @@ OTPSchema.statics.cleanupExpired = async function() {
   })
 }
 
-export default mongoose.models.OTP || mongoose.model<IOTP>('OTP', OTPSchema)
+export default (mongoose.models.OTP as IOTPModel) || mongoose.model<IOTP, IOTPModel>('OTP', OTPSchema)

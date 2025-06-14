@@ -4,12 +4,36 @@ import OTP from '@/lib/models/OTP'
 import User from '@/lib/models/User'
 import { emailService } from '@/lib/email'
 
+// Define request body interface
+interface SendOTPRequest {
+  email: string
+  type?: 'signup' | 'password-reset' | 'email-verification'
+  name?: string
+}
+
+// Define response interfaces
+interface SendOTPSuccessResponse {
+  success: true
+  message: string
+  data: {
+    email: string
+    expiresAt: Date
+    type: string
+  }
+}
+
+interface SendOTPErrorResponse {
+  success: false
+  error: string
+}
+
 // POST /api/auth/send-otp - Send OTP for email verification
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse<SendOTPSuccessResponse | SendOTPErrorResponse>> {
   try {
     await connectDB()
-    
-    const { email, type = 'signup', name } = await request.json()
+
+    const body: SendOTPRequest = await request.json()
+    const { email, type = 'signup', name } = body
     
     // Validate email
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {

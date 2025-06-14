@@ -31,6 +31,7 @@ interface Policy {
 export default function AdminPoliciesPage() {
   const [policies, setPolicies] = useState<Policy[]>([])
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null)
   const [viewingPolicy, setViewingPolicy] = useState<Policy | null>(null)
   const [isCreating, setIsCreating] = useState(false)
@@ -57,7 +58,7 @@ export default function AdminPoliciesPage() {
           _id: '1',
           type: 'privacy',
           title: 'Privacy Policy',
-          content: 'This Privacy Policy describes how Bindass collects, uses, and protects your personal information...',
+          content: 'This Privacy Policy describes how Bindass collects, uses, and protects your personal information when you visit our website or use our services. We are committed to ensuring that your privacy is protected and that any personal information you provide is handled in accordance with applicable data protection laws.\n\nInformation We Collect:\n- Personal identification information (name, email address, phone number)\n- Billing and shipping addresses\n- Payment information (processed securely through our payment providers)\n- Website usage data and cookies\n\nHow We Use Your Information:\n- To process and fulfill your orders\n- To communicate with you about your purchases\n- To improve our website and services\n- To send promotional emails (with your consent)\n\nData Protection:\nWe implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.',
           isPublished: true,
           lastUpdated: '2024-01-15T10:30:00Z',
           updatedBy: 'Admin User'
@@ -66,7 +67,7 @@ export default function AdminPoliciesPage() {
           _id: '2',
           type: 'terms',
           title: 'Terms of Service',
-          content: 'These Terms of Service govern your use of the Bindass website and services...',
+          content: 'These Terms of Service govern your use of the Bindass website and services. By accessing or using our website, you agree to be bound by these terms.\n\nAcceptance of Terms:\nBy using our website, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.\n\nUse of Website:\n- You must be at least 18 years old to use our services\n- You agree to provide accurate and complete information\n- You are responsible for maintaining the confidentiality of your account\n\nProhibited Activities:\n- Violating any applicable laws or regulations\n- Transmitting harmful or malicious code\n- Attempting to gain unauthorized access to our systems\n\nIntellectual Property:\nAll content on this website is owned by Bindass and protected by copyright laws.',
           isPublished: true,
           lastUpdated: '2024-01-14T15:20:00Z',
           updatedBy: 'Admin User'
@@ -75,7 +76,7 @@ export default function AdminPoliciesPage() {
           _id: '3',
           type: 'shipping',
           title: 'Shipping Policy',
-          content: 'We offer fast and reliable shipping options for all our anime fashion products...',
+          content: 'We offer fast and reliable shipping options for all our anime fashion products. Our goal is to get your order to you as quickly and safely as possible.\n\nShipping Methods:\n- Standard Shipping (5-7 business days): Free on orders over ₹1000\n- Express Shipping (2-3 business days): ₹150\n- Overnight Shipping (1 business day): ₹300\n\nProcessing Time:\nOrders are typically processed within 1-2 business days. Custom or personalized items may take additional time.\n\nShipping Locations:\nWe currently ship within India. International shipping is not available at this time.\n\nTracking:\nOnce your order ships, you will receive a tracking number via email to monitor your package.',
           isPublished: true,
           lastUpdated: '2024-01-13T09:15:00Z',
           updatedBy: 'Admin User'
@@ -84,7 +85,7 @@ export default function AdminPoliciesPage() {
           _id: '4',
           type: 'return',
           title: 'Return Policy',
-          content: 'We want you to be completely satisfied with your purchase. If you are not happy...',
+          content: 'We want you to be completely satisfied with your purchase. If you are not happy with your order, we offer a hassle-free return policy.\n\nReturn Window:\nYou have 30 days from the date of delivery to return items for a full refund.\n\nReturn Conditions:\n- Items must be in original condition with tags attached\n- Items must be unworn and unwashed\n- Original packaging must be included\n- Custom or personalized items cannot be returned\n\nReturn Process:\n1. Contact our customer service team\n2. Receive return authorization and shipping label\n3. Package items securely and ship back to us\n4. Refund will be processed within 5-7 business days\n\nExchanges:\nWe offer free exchanges for different sizes or colors within 30 days.',
           isPublished: false,
           lastUpdated: '2024-01-12T14:45:00Z',
           updatedBy: 'Admin User'
@@ -93,16 +94,36 @@ export default function AdminPoliciesPage() {
       setPolicies(mockPolicies)
     } catch (error) {
       console.error('Error fetching policies:', error)
+      toast.error('Failed to load policies')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSavePolicy = async (policy: Policy) => {
+  const handleSavePolicy = async (policy: Policy | null) => {
+    if (!policy) {
+      toast.error('No policy data to save')
+      return
+    }
+
+    // Validation
+    if (!policy.title.trim()) {
+      toast.error('Policy title is required')
+      return
+    }
+
+    if (!policy.content.trim()) {
+      toast.error('Policy content is required')
+      return
+    }
+
     try {
+      setSaving(true)
       // Mock save - replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API delay
+
       if (isCreating) {
-        const newPolicy = {
+        const newPolicy: Policy = {
           ...policy,
           _id: Date.now().toString(),
           lastUpdated: new Date().toISOString(),
@@ -123,6 +144,8 @@ export default function AdminPoliciesPage() {
     } catch (error) {
       console.error('Error saving policy:', error)
       toast.error('Failed to save policy')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -287,8 +310,13 @@ export default function AdminPoliciesPage() {
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div>{new Date(policy.lastUpdated).toLocaleDateString()}</div>
-                        <div className="text-xs">by {policy.updatedBy}</div>
+                        <div>
+                          {policy.lastUpdated
+                            ? new Date(policy.lastUpdated).toLocaleDateString()
+                            : 'Never'
+                          }
+                        </div>
+                        <div className="text-xs">by {policy.updatedBy || 'Unknown'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-2">
@@ -420,7 +448,10 @@ export default function AdminPoliciesPage() {
                     Last Updated
                   </label>
                   <div className="text-sm text-gray-600">
-                    {new Date(viewingPolicy.lastUpdated).toLocaleString()}
+                    {viewingPolicy.lastUpdated
+                      ? new Date(viewingPolicy.lastUpdated).toLocaleString()
+                      : 'Never updated'
+                    }
                   </div>
                 </div>
                 <div>
@@ -428,13 +459,13 @@ export default function AdminPoliciesPage() {
                     Updated By
                   </label>
                   <div className="text-sm text-gray-600">
-                    {viewingPolicy.updatedBy}
+                    {viewingPolicy.updatedBy || 'Unknown'}
                   </div>
                 </div>
               </div>
             </div>
           </motion.div>
-        ) : (
+        ) : editingPolicy ? (
           /* Policy Editor */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -450,10 +481,11 @@ export default function AdminPoliciesPage() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleSavePolicy(editingPolicy)}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  disabled={!editingPolicy.title.trim() || !editingPolicy.content.trim() || saving}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Save className="w-4 h-4" />
-                  Save
+                  <Save className={`w-4 h-4 ${saving ? 'animate-spin' : ''}`} />
+                  {saving ? 'Saving...' : 'Save'}
                 </motion.button>
                 <button
                   onClick={() => {
@@ -475,7 +507,7 @@ export default function AdminPoliciesPage() {
                   </label>
                   <select
                     value={editingPolicy.type}
-                    onChange={(e) => setEditingPolicy({...editingPolicy, type: e.target.value})}
+                    onChange={(e) => setEditingPolicy(prev => prev ? {...prev, type: e.target.value} : null)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
                     {policyTypes.map(type => (
@@ -491,23 +523,30 @@ export default function AdminPoliciesPage() {
                   <input
                     type="text"
                     value={editingPolicy.title}
-                    onChange={(e) => setEditingPolicy({...editingPolicy, title: e.target.value})}
+                    onChange={(e) => setEditingPolicy(prev => prev ? {...prev, title: e.target.value} : null)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Enter policy title"
+                    required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Content
-                </label>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Content
+                  </label>
+                  <span className="text-xs text-gray-500">
+                    {editingPolicy.content.length} characters
+                  </span>
+                </div>
                 <textarea
                   rows={15}
                   value={editingPolicy.content}
-                  onChange={(e) => setEditingPolicy({...editingPolicy, content: e.target.value})}
+                  onChange={(e) => setEditingPolicy(prev => prev ? {...prev, content: e.target.value} : null)}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="Enter policy content..."
+                  required
                 />
               </div>
 
@@ -516,7 +555,7 @@ export default function AdminPoliciesPage() {
                   type="checkbox"
                   id="isPublished"
                   checked={editingPolicy.isPublished}
-                  onChange={(e) => setEditingPolicy({...editingPolicy, isPublished: e.target.checked})}
+                  onChange={(e) => setEditingPolicy(prev => prev ? {...prev, isPublished: e.target.checked} : null)}
                   className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                 />
                 <label htmlFor="isPublished" className="ml-2 block text-sm text-gray-900">
@@ -525,6 +564,21 @@ export default function AdminPoliciesPage() {
               </div>
             </div>
           </motion.div>
+        ) : (
+          /* Fallback - should not happen */
+          <div className="text-center py-12">
+            <p className="text-gray-600">Something went wrong. Please try again.</p>
+            <button
+              onClick={() => {
+                setEditingPolicy(null)
+                setViewingPolicy(null)
+                setIsCreating(false)
+              }}
+              className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            >
+              Back to List
+            </button>
+          </div>
         )}
       </div>
     </AdminLayout>

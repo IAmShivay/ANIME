@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose'
+import mongoose, { Schema, Document, Model } from 'mongoose'
 
 export interface ICurrency {
   code: string // USD, EUR, INR, etc.
@@ -44,6 +44,13 @@ export interface ISettings extends Document {
   }
   createdAt: Date
   updatedAt: Date
+  formatCurrency(amount: number, currencyCode?: string): string
+  convertCurrency(amount: number, fromCode: string, toCode: string): number
+}
+
+// Interface for the Settings model with static methods
+export interface ISettingsModel extends Model<ISettings> {
+  getSettings(): Promise<ISettings>
 }
 
 const CurrencySchema = new Schema({
@@ -206,4 +213,4 @@ SettingsSchema.methods.convertCurrency = function(amount: number, fromCode: stri
   return baseAmount * toCurrency.exchangeRate
 }
 
-export default mongoose.models.Settings || mongoose.model<ISettings>('Settings', SettingsSchema)
+export default (mongoose.models.Settings as ISettingsModel) || mongoose.model<ISettings, ISettingsModel>('Settings', SettingsSchema)

@@ -59,10 +59,13 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1)
 
   useEffect(() => {
-    fetchProduct()
-  }, [params.id])
+    if (params?.id) {
+      fetchProduct()
+    }
+  }, [params?.id])
 
   const fetchProduct = async () => {
+    if (!params?.id) return
     try {
       const response = await fetch(`/api/products/${params.id}`)
       if (response.ok) {
@@ -109,7 +112,9 @@ export default function ProductDetailPage() {
       id: product._id,
       name: product.name,
       price: product.price,
-      image: product.images[0]
+      image: product.images[0],
+      category: product.category,
+      subCategory: product.subcategory
     }))
     
     toast.success('Added to wishlist!')
@@ -236,11 +241,11 @@ export default function ProductDetailPage() {
               
               <div className="flex items-center gap-4">
                 <span className="text-3xl font-bold text-purple-600">
-                  {formatCurrency(product.price, currentCurrency)}
+                  {formatCurrency(product.price, currentCurrency || undefined)}
                 </span>
                 {product.comparePrice && (
                   <span className="text-xl text-gray-500 line-through">
-                    {formatCurrency(product.comparePrice, currentCurrency)}
+                    {formatCurrency(product.comparePrice, currentCurrency || undefined)}
                   </span>
                 )}
               </div>

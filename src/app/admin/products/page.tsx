@@ -16,12 +16,14 @@ import {
 } from 'lucide-react'
 import { useSelector } from 'react-redux'
 import { selectCurrentUser, selectIsAuthenticated } from '@/store/slices/authSlice'
+import { selectCurrentCurrency } from '@/store/slices/settingsSlice'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
 import { AdminLayout } from '@/components/admin/AdminLayout'
 import { ProductsSkeleton } from '@/components/ui/SkeletonLoader'
+import { formatCurrency } from '@/utils/formatCurrency'
 
 interface Product {
   _id: string
@@ -43,6 +45,7 @@ interface Product {
 }
 
 export default function AdminProductsPage() {
+  const currentCurrency = useSelector(selectCurrentCurrency)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -271,11 +274,11 @@ export default function AdminProductsPage() {
                     <div className="flex items-center gap-2">
                       <DollarSign className="w-4 h-4 text-green-600" />
                       <span className="font-bold text-green-600">
-                        ${product.price.toFixed(2)}
+                        {formatCurrency(product.price, currentCurrency)}
                       </span>
                       {product.comparePrice && (
                         <span className="text-sm text-gray-500 line-through">
-                          ${product.comparePrice.toFixed(2)}
+                          {formatCurrency(product.comparePrice, currentCurrency)}
                         </span>
                       )}
                     </div>

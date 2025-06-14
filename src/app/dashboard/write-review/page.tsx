@@ -36,8 +36,8 @@ interface Order {
 export default function WriteReviewPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const orderId = searchParams.get('orderId')
-  const productId = searchParams.get('productId')
+  const orderId = searchParams?.get('orderId')
+  const productId = searchParams?.get('productId')
   
   const isAuthenticated = useSelector(selectIsAuthenticated)
   const currentUser = useSelector(selectCurrentUser)
@@ -46,7 +46,7 @@ export default function WriteReviewPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [canReview, setCanReview] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState<string | null>(productId)
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(productId || null)
   
   const [reviewData, setReviewData] = useState({
     rating: 0,

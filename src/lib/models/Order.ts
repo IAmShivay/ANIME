@@ -231,7 +231,7 @@ OrderSchema.pre('save', async function(next) {
 
 // Virtual for order total items count
 OrderSchema.virtual('totalItems').get(function() {
-  return this.items.reduce((total: number, item: IOrderItem) => total + item.quantity, 0)
+  return this.items.reduce((total: number, item: any) => total + (item.quantity || 0), 0)
 })
 
 export default mongoose.models.Order || mongoose.model<IOrder>('Order', OrderSchema)

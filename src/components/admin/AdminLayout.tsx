@@ -172,6 +172,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   ]
 
   const isActiveRoute = (href: string) => {
+    if (!pathname) return false
     if (href === '/admin') {
       return pathname === '/admin'
     }
@@ -369,7 +370,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               {/* Page Title */}
               <div className="hidden md:block">
                 <h1 className="text-xl font-semibold text-gray-900">
-                  {pathname === '/admin' ? 'Dashboard' :
+                  {!pathname ? 'Admin Panel' :
+                   pathname === '/admin' ? 'Dashboard' :
                    pathname.includes('/orders') ? 'Orders' :
                    pathname.includes('/products') ? 'Products' :
                    pathname.includes('/settings') ? 'Settings' :

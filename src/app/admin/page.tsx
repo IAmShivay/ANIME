@@ -14,14 +14,16 @@ import {
   Plus,
   Star,
   Clock,
-  CheckCircle
+  CheckCircle,
+  RefreshCw
 } from 'lucide-react'
 import Link from 'next/link'
 import { useSelector } from 'react-redux'
-import { selectCurrentUser, selectIsAuthenticated } from '@/store/slices/authSlice'
+import { selectCurrentUser } from '@/store/slices/authSlice'
 import { selectCurrencySymbol } from '@/store/slices/settingsSlice'
 import { AdminLayout } from '@/components/admin/AdminLayout'
 import { DashboardSkeleton } from '@/components/ui/SkeletonLoader'
+import toast from 'react-hot-toast'
 
 interface DashboardStats {
   totalProducts: number
@@ -35,32 +37,44 @@ interface DashboardStats {
 interface RecentOrder {
   _id: string
   orderNumber: string
-  user: {
+  user?: {
     name: string
     email: string
   }
-  pricing: {
+  customer?: {
+    name: string
+    email: string
+  }
+  pricing?: {
     total: number
   }
+  total?: number
   orderStatus: string
+  status?: string
   createdAt: string
 }
 
 export default function AdminDashboard() {
-  const isAuthenticated = useSelector(selectIsAuthenticated)
   const currentUser = useSelector(selectCurrentUser)
   const currencySymbol = useSelector(selectCurrencySymbol)
 
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     fetchDashboardData()
   }, [])
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (isRefresh = false) => {
     try {
+      if (isRefresh) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
+      }
+
       const response = await fetch('/api/admin/dashboard', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -69,14 +83,32 @@ export default function AdminDashboard() {
 
       if (response.ok) {
         const data = await response.json()
-        setStats(data.data.overview)
-        setRecentOrders(data.data.recentOrders)
+        if (data.success) {
+          setStats(data.data?.overview || null)
+          setRecentOrders(data.data?.recentOrders || [])
+          if (isRefresh) {
+            toast.success('Dashboard refreshed successfully')
+          }
+        } else {
+          toast.error('Failed to load dashboard data')
+        }
+      } else {
+        toast.error('Failed to fetch dashboard data')
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
+      toast.error('Error loading dashboard')
     } finally {
-      setLoading(false)
+      if (isRefresh) {
+        setRefreshing(false)
+      } else {
+        setLoading(false)
+      }
     }
+  }
+
+  const handleRefresh = () => {
+    fetchDashboardData(true)
   }
 
   if (loading) {
@@ -101,7 +133,7 @@ export default function AdminDashboard() {
       value: stats?.totalOrders || 0,
       icon: ShoppingCart,
       color: 'bg-green-500',
-      change: `${stats?.orderGrowth > 0 ? '+' : ''}${stats?.orderGrowth.toFixed(1)}%`,
+      change: `${(stats?.orderGrowth || 0) > 0 ? '+' : ''}${(stats?.orderGrowth || 0).toFixed(1)}%`,
       positive: (stats?.orderGrowth || 0) > 0,
     },
     {
@@ -117,7 +149,7 @@ export default function AdminDashboard() {
       value: `${currencySymbol}${(stats?.totalRevenue || 0).toLocaleString()}`,
       icon: DollarSign,
       color: 'bg-yellow-500',
-      change: `${stats?.revenueGrowth > 0 ? '+' : ''}${stats?.revenueGrowth.toFixed(1)}%`,
+      change: `${(stats?.revenueGrowth || 0) > 0 ? '+' : ''}${(stats?.revenueGrowth || 0).toFixed(1)}%`,
       positive: (stats?.revenueGrowth || 0) > 0,
     },
   ]
@@ -133,6 +165,16 @@ export default function AdminDashboard() {
               <p className="text-gray-600 mt-1">Welcome back, {currentUser?.name}</p>
             </div>
             <div className="flex gap-3">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleRefresh}
+                disabled={loading || refreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </motion.button>
               <Link href="/admin/products/new">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -262,35 +304,47 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {recentOrders.map((order) => (
-                  <tr key={order._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {order.orderNumber}
+                {recentOrders.length > 0 ? (
+                  recentOrders.map((order) => (
+                    <tr key={order._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {order.orderNumber}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{order.user?.name || order.customer?.name || 'N/A'}</div>
+                        <div className="text-sm text-gray-500">{order.user?.email || order.customer?.email || 'N/A'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          (order.orderStatus || order.status) === 'delivered' ? 'bg-green-100 text-green-800' :
+                          (order.orderStatus || order.status) === 'shipped' ? 'bg-blue-100 text-blue-800' :
+                          (order.orderStatus || order.status) === 'processing' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {order.orderStatus || order.status || 'pending'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {currencySymbol}{(order.total || order.pricing?.total || 0).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center">
+                        <ShoppingCart className="w-12 h-12 text-gray-300 mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No recent orders</h3>
+                        <p className="text-gray-600">Orders will appear here once customers start placing them</p>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{order.user.name}</div>
-                      <div className="text-sm text-gray-500">{order.user.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        order.orderStatus === 'delivered' ? 'bg-green-100 text-green-800' :
-                        order.orderStatus === 'shipped' ? 'bg-blue-100 text-blue-800' :
-                        order.orderStatus === 'processing' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {order.orderStatus}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {currencySymbol}{order.pricing.total.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(order.createdAt).toLocaleDateString()}
-                    </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>

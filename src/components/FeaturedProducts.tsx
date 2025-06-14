@@ -34,7 +34,9 @@ const LazyProductCard = memo(({ product, index }: { product: any, index: number 
       id: product._id,
       name: product.name,
       price: product.price,
-      image: product.images[0]
+      image: product.images[0],
+      category: product.category,
+      subCategory: product.subCategory
     }))
     toast.success('Added to wishlist!')
   }

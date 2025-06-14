@@ -4,11 +4,41 @@ import jwt from 'jsonwebtoken'
 import connectDB from '@/lib/mongodb'
 import User from '@/lib/models/User'
 
-export async function POST(request: NextRequest) {
+// Define request body interface
+interface RegisterRequest {
+  name: string
+  email: string
+  password: string
+}
+
+// Define response interfaces
+interface RegisterSuccessResponse {
+  success: true
+  data: {
+    user: {
+      id: string
+      name: string
+      email: string
+      role: string
+      avatar?: string
+    }
+    token: string
+  }
+  message: string
+}
+
+interface RegisterErrorResponse {
+  success: false
+  error: string
+  message?: string
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse<RegisterSuccessResponse | RegisterErrorResponse>> {
   try {
     await connectDB()
 
-    const { name, email, password } = await request.json()
+    const body: RegisterRequest = await request.json()
+    const { name, email, password } = body
 
     // Validate input
     if (!name || !email || !password) {

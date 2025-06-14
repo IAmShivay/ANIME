@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { 
-  ArrowLeft, 
-  Edit, 
-  Trash2, 
+  ArrowLeft,
+  Edit,
+  Trash2,
   Eye,
   Package,
   DollarSign,
@@ -14,7 +14,9 @@ import {
   Calendar,
   User,
   Star,
-  Image as ImageIcon
+  Image as ImageIcon,
+  RefreshCw,
+  Copy
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -65,15 +67,26 @@ export default function AdminProductDetailPage() {
   const currentCurrency = useSelector(selectCurrentCurrency)
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
   const [selectedImage, setSelectedImage] = useState(0)
 
+  const productId = params?.id as string
+
   useEffect(() => {
-    fetchProduct()
-  }, [params.id])
+    if (productId) {
+      fetchProduct()
+    }
+  }, [productId])
 
   const fetchProduct = async () => {
+    if (!productId) {
+      toast.error('Product ID is required')
+      router.push('/admin/products')
+      return
+    }
+
     try {
-      const response = await fetch(`/api/admin/products/${params.id}`, {
+      const response = await fetch(`/api/admin/products/${productId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
@@ -82,20 +95,35 @@ export default function AdminProductDetailPage() {
         const data = await response.json()
         if (data.success) {
           setProduct(data.data)
+        } else {
+          toast.error('Failed to load product data')
+          router.push('/admin/products')
         }
+      } else {
+        toast.error('Product not found')
+        router.push('/admin/products')
       }
     } catch (error) {
       console.error('Error fetching product:', error)
       toast.error('Failed to load product')
+      router.push('/admin/products')
     } finally {
       setLoading(false)
     }
   }
 
   const handleDeleteProduct = async () => {
-    if (!product || !confirm('Are you sure you want to delete this product?')) return
+    if (!product) {
+      toast.error('No product to delete')
+      return
+    }
+
+    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+      return
+    }
 
     try {
+      setDeleting(true)
       const response = await fetch(`/api/admin/products/${product._id}`, {
         method: 'DELETE',
         headers: {
@@ -107,11 +135,24 @@ export default function AdminProductDetailPage() {
         toast.success('Product deleted successfully!')
         router.push('/admin/products')
       } else {
-        toast.error('Failed to delete product')
+        const error = await response.json()
+        toast.error(error.error || 'Failed to delete product')
       }
     } catch (error) {
       console.error('Error deleting product:', error)
       toast.error('Error deleting product')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      toast.success(`${label} copied to clipboard!`)
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error)
+      toast.error('Failed to copy to clipboard')
     }
   }
 
@@ -166,8 +207,12 @@ export default function AdminProductDetailPage() {
     )
   }
 
-  const ratingValue = typeof product.rating === 'object' ? product.rating.average : product.rating
-  const reviewCount = typeof product.rating === 'object' ? product.rating.count : product.reviews
+  const ratingValue = typeof product.rating === 'object'
+    ? (product.rating?.average || 0)
+    : (product.rating || 0)
+  const reviewCount = typeof product.rating === 'object'
+    ? (product.rating?.count || 0)
+    : (product.reviews || 0)
 
   return (
     <AdminLayout>
@@ -192,6 +237,16 @@ export default function AdminProductDetailPage() {
             </div>
             
             <div className="flex gap-3">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={fetchProduct}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </motion.button>
               <Link href={`/products/${product._id}`} target="_blank">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -216,10 +271,11 @@ export default function AdminProductDetailPage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleDeleteProduct}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                disabled={deleting}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Trash2 className="w-4 h-4" />
-                Delete
+                <Trash2 className={`w-4 h-4 ${deleting ? 'animate-spin' : ''}`} />
+                {deleting ? 'Deleting...' : 'Delete'}
               </motion.button>
             </div>
           </div>
@@ -230,38 +286,47 @@ export default function AdminProductDetailPage() {
           <div className="space-y-4">
             {/* Main Image */}
             <div className="relative aspect-square overflow-hidden rounded-lg bg-white border">
-              {product.images.length > 0 ? (
+              {product.images && product.images.length > 0 ? (
                 <Image
-                  src={product.images[selectedImage]}
-                  alt={product.name}
+                  src={product.images[selectedImage] || product.images[0]}
+                  alt={product.name || 'Product image'}
                   fill
                   className="object-cover"
                   priority
+                  onError={() => {
+                    console.error('Failed to load product image')
+                  }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                  <ImageIcon className="w-16 h-16 text-gray-400" />
+                  <div className="text-center">
+                    <ImageIcon className="w-16 h-16 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">No image available</p>
+                  </div>
                 </div>
               )}
             </div>
             
             {/* Thumbnail Images */}
-            {product.images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto">
+            {product.images && product.images.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
                 {product.images.map((image, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
+                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors hover:border-purple-400 ${
                       selectedImage === index ? 'border-purple-600' : 'border-gray-200'
                     }`}
                   >
                     <Image
                       src={image}
-                      alt={`${product.name} ${index + 1}`}
+                      alt={`${product.name || 'Product'} ${index + 1}`}
                       width={80}
                       height={80}
                       className="object-cover w-full h-full"
+                      onError={() => {
+                        console.error(`Failed to load thumbnail image ${index + 1}`)
+                      }}
                     />
                   </button>
                 ))}
@@ -313,11 +378,11 @@ export default function AdminProductDetailPage() {
               
               <div className="flex items-center gap-4 mb-4">
                 <span className="text-2xl font-bold text-purple-600">
-                  {formatCurrency(product.price, currentCurrency)}
+                  {formatCurrency(product.price, currentCurrency || undefined)}
                 </span>
                 {product.comparePrice && (
                   <span className="text-lg text-gray-500 line-through">
-                    {formatCurrency(product.comparePrice, currentCurrency)}
+                    {formatCurrency(product.comparePrice, currentCurrency || undefined)}
                   </span>
                 )}
               </div>
@@ -331,16 +396,34 @@ export default function AdminProductDetailPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <span className="text-sm font-medium text-gray-700">Stock Quantity:</span>
-                  <span className="text-sm text-gray-900 ml-2">{product.inventory.quantity}</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-sm text-gray-900">{product.inventory?.quantity || 0}</span>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      (product.inventory?.quantity || 0) > 10
+                        ? 'bg-green-100 text-green-800'
+                        : (product.inventory?.quantity || 0) > 0
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {(product.inventory?.quantity || 0) > 10
+                        ? 'In Stock'
+                        : (product.inventory?.quantity || 0) > 0
+                        ? 'Low Stock'
+                        : 'Out of Stock'
+                      }
+                    </span>
+                  </div>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-700">SKU:</span>
-                  <span className="text-sm text-gray-900 ml-2">{product.inventory.sku || 'Not set'}</span>
+                  <span className="text-sm text-gray-900 ml-2 font-mono">
+                    {product.inventory?.sku || 'Not set'}
+                  </span>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-700">Track Quantity:</span>
                   <span className="text-sm text-gray-900 ml-2">
-                    {product.inventory.trackQuantity ? 'Yes' : 'No'}
+                    {product.inventory?.trackQuantity ? 'Yes' : 'No'}
                   </span>
                 </div>
               </div>
@@ -466,18 +549,33 @@ export default function AdminProductDetailPage() {
                 <div>
                   <span className="text-sm font-medium text-gray-700">Created:</span>
                   <span className="text-sm text-gray-900 ml-2">
-                    {new Date(product.createdAt).toLocaleString()}
+                    {product.createdAt
+                      ? new Date(product.createdAt).toLocaleString()
+                      : 'Not available'
+                    }
                   </span>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-700">Last Updated:</span>
                   <span className="text-sm text-gray-900 ml-2">
-                    {new Date(product.updatedAt).toLocaleString()}
+                    {product.updatedAt
+                      ? new Date(product.updatedAt).toLocaleString()
+                      : 'Not available'
+                    }
                   </span>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-700">Product ID:</span>
-                  <span className="text-sm text-gray-900 ml-2 font-mono">{product._id}</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-sm text-gray-900 font-mono">{product._id}</span>
+                    <button
+                      onClick={() => copyToClipboard(product._id, 'Product ID')}
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                      title="Copy Product ID"
+                    >
+                      <Copy className="w-3 h-3 text-gray-500" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

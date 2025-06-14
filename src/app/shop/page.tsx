@@ -13,16 +13,16 @@ import { useSearchParams } from 'next/navigation'
 export default function ShopPage() {
   const searchParams = useSearchParams()
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
-    searchParams.get('category')
+    searchParams?.get('category') || null
   )
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
-  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'createdAt')
+  const [searchQuery, setSearchQuery] = useState(searchParams?.get('search') || '')
+  const [sortBy, setSortBy] = useState(searchParams?.get('sort') || 'createdAt')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(
-    (searchParams.get('order') as 'asc' | 'desc') || 'desc'
+    (searchParams?.get('order') as 'asc' | 'desc') || 'desc'
   )
   const [priceRange, setPriceRange] = useState({
-    min: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined,
-    max: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined,
+    min: searchParams?.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined,
+    max: searchParams?.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined,
   })
   const [currentPage, setCurrentPage] = useState(1)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -30,7 +30,14 @@ export default function ShopPage() {
 
   const [products, setProducts] = useState([])
   const [isLoading, setIsLoading] = useState(true)
-  const [pagination, setPagination] = useState(null)
+  const [pagination, setPagination] = useState<{
+    page: number
+    limit: number
+    total: number
+    pages: number
+    hasNext: boolean
+    hasPrev: boolean
+  } | null>(null)
   const [error, setError] = useState(false)
 
   useEffect(() => {

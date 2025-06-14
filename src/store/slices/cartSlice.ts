@@ -8,6 +8,8 @@ export interface CartItem {
   quantity: number
   size?: string
   color?: string
+  selectedSize?: string
+  selectedColor?: string
   maxQuantity: number
 }
 

@@ -26,6 +26,7 @@ export default function WishlistPage() {
       name: item.name,
       price: item.price,
       image: item.image,
+      quantity: 1,
       maxQuantity: 10, // Default max quantity
     }))
     toast.success('Added to cart!')

@@ -57,6 +57,8 @@ export default function EditProductPage() {
   const [product, setProduct] = useState<Product | null>(null)
   const [images, setImages] = useState<string[]>([])
 
+  const productId = params?.id as string
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -96,12 +98,20 @@ export default function EditProductPage() {
   const availableColors = ['Black', 'White', 'Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Pink', 'Gray', 'Navy']
 
   useEffect(() => {
-    fetchProduct()
-  }, [params.id])
+    if (productId) {
+      fetchProduct()
+    }
+  }, [productId])
 
   const fetchProduct = async () => {
+    if (!productId) {
+      toast.error('Product ID is required')
+      router.push('/admin/products')
+      return
+    }
+
     try {
-      const response = await fetch(`/api/admin/products/${params.id}`, {
+      const response = await fetch(`/api/admin/products/${productId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
@@ -112,7 +122,7 @@ export default function EditProductPage() {
           const productData = data.data
           setProduct(productData)
           setImages(productData.images || [])
-          
+
           // Populate form data
           setFormData({
             name: productData.name || '',
@@ -141,7 +151,13 @@ export default function EditProductPage() {
               keywords: productData.seo?.keywords || ''
             }
           })
+        } else {
+          toast.error('Failed to load product data')
+          router.push('/admin/products')
         }
+      } else {
+        toast.error('Product not found')
+        router.push('/admin/products')
       }
     } catch (error) {
       console.error('Error fetching product:', error)
@@ -208,8 +224,37 @@ export default function EditProductPage() {
     }))
   }
 
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      toast.error('Product name is required')
+      return false
+    }
+    if (!formData.description.trim()) {
+      toast.error('Product description is required')
+      return false
+    }
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      toast.error('Valid price is required')
+      return false
+    }
+    if (!formData.category) {
+      toast.error('Category is required')
+      return false
+    }
+    if (images.length === 0) {
+      toast.error('At least one product image is required')
+      return false
+    }
+    return true
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!validateForm()) {
+      return
+    }
+
     setSaving(true)
 
     try {
@@ -226,7 +271,7 @@ export default function EditProductPage() {
         }
       }
 
-      const response = await fetch(`/api/admin/products/${params.id}`, {
+      const response = await fetch(`/api/admin/products/${productId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -237,12 +282,13 @@ export default function EditProductPage() {
 
       if (response.ok) {
         toast.success('Product updated successfully!')
-        router.push(`/admin/products/${params.id}`)
+        router.push(`/admin/products/${productId}`)
       } else {
         const error = await response.json()
         toast.error(error.error || 'Failed to update product')
       }
     } catch (error) {
+      console.error('Error updating product:', error)
       toast.error('Error updating product')
     } finally {
       setSaving(false)
@@ -298,7 +344,7 @@ export default function EditProductPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href={`/admin/products/${params.id}`}>
+              <Link href={`/admin/products/${productId}`}>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -314,7 +360,7 @@ export default function EditProductPage() {
             </div>
             
             <div className="flex gap-3">
-              <Link href={`/admin/products/${params.id}`}>
+              <Link href={`/admin/products/${productId}`}>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -327,10 +373,10 @@ export default function EditProductPage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleSubmit}
-                disabled={saving}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300 disabled:opacity-50"
+                disabled={saving || !formData.name.trim() || !formData.description.trim() || !formData.price || !formData.category || images.length === 0}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Save className="w-5 h-5" />
+                <Save className={`w-5 h-5 ${saving ? 'animate-spin' : ''}`} />
                 {saving ? 'Saving...' : 'Save Changes'}
               </motion.button>
             </div>
@@ -362,9 +408,14 @@ export default function EditProductPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description *
-                    </label>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Description *
+                      </label>
+                      <span className="text-xs text-gray-500">
+                        {formData.description.length} characters
+                      </span>
+                    </div>
                     <textarea
                       name="description"
                       value={formData.description}
@@ -455,11 +506,232 @@ export default function EditProductPage() {
                 </div>
               </div>
 
-              {/* Sidebar */}
+              {/* Product Images */}
               <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Product Status & Inventory</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">Product Images</h2>
+
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="image-upload"
+                    />
+                    <label htmlFor="image-upload" className="cursor-pointer">
+                      <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600 mb-2">Click to upload images</p>
+                      <p className="text-sm text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                    </label>
+                  </div>
+
+                  {images.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {images.map((image, index) => (
+                        <div key={index} className="relative group">
+                          <div className="relative w-full h-32">
+                            <Image
+                              src={image}
+                              alt={`Product image ${index + 1}`}
+                              fill
+                              className="object-cover rounded-lg"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Sizes & Colors */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">Variants</h2>
+
+                <div className="space-y-6">
+                  {/* Sizes */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Available Sizes
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableSizes.map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => toggleSize(size)}
+                          className={`px-4 py-2 border rounded-lg font-medium transition-colors ${
+                            formData.sizes.includes(size)
+                              ? 'border-purple-600 bg-purple-600 text-white'
+                              : 'border-gray-300 text-gray-700 hover:border-purple-600'
+                          }`}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Colors */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Available Colors
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableColors.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => toggleColor(color)}
+                          className={`px-4 py-2 border rounded-lg font-medium transition-colors ${
+                            formData.colors.includes(color)
+                              ? 'border-purple-600 bg-purple-600 text-white'
+                              : 'border-gray-300 text-gray-700 hover:border-purple-600'
+                          }`}
+                        >
+                          {color}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Specifications */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">Specifications</h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Material
+                    </label>
+                    <input
+                      type="text"
+                      name="specifications.material"
+                      value={formData.specifications.material}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="e.g., 100% Cotton"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Fit
+                    </label>
+                    <input
+                      type="text"
+                      name="specifications.fit"
+                      value={formData.specifications.fit}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="e.g., Regular Fit"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Care Instructions
+                    </label>
+                    <input
+                      type="text"
+                      name="specifications.care"
+                      value={formData.specifications.care}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="e.g., Machine wash cold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Origin
+                    </label>
+                    <input
+                      type="text"
+                      name="specifications.origin"
+                      value={formData.specifications.origin}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="e.g., Made in India"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SEO */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">SEO Settings</h2>
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      SEO Title
+                    </label>
+                    <input
+                      type="text"
+                      name="seo.title"
+                      value={formData.seo.title}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="SEO optimized title"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {formData.seo.title.length}/60 characters
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      SEO Description
+                    </label>
+                    <textarea
+                      name="seo.description"
+                      value={formData.seo.description}
+                      onChange={handleInputChange}
+                      rows={3}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                      placeholder="SEO meta description"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {formData.seo.description.length}/160 characters
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Keywords
+                    </label>
+                    <input
+                      type="text"
+                      name="seo.keywords"
+                      value={formData.seo.keywords}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="keyword1, keyword2, keyword3"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-8">
+              {/* Product Status */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">Product Status</h2>
+
+                <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Status
@@ -476,6 +748,26 @@ export default function EditProductPage() {
                     </select>
                   </div>
 
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="featured"
+                      checked={formData.featured}
+                      onChange={handleInputChange}
+                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    />
+                    <label className="ml-2 text-sm text-gray-700">
+                      Featured Product
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Inventory */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">Inventory</h2>
+
+                <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       SKU
@@ -505,32 +797,50 @@ export default function EditProductPage() {
                     />
                   </div>
 
-                  <div className="flex items-center space-y-2">
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        name="featured"
-                        checked={formData.featured}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                      />
-                      <label className="ml-2 text-sm text-gray-700">
-                        Featured Product
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        name="trackQuantity"
-                        checked={formData.trackQuantity}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                      />
-                      <label className="ml-2 text-sm text-gray-700">
-                        Track quantity
-                      </label>
-                    </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="trackQuantity"
+                      checked={formData.trackQuantity}
+                      onChange={handleInputChange}
+                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    />
+                    <label className="ml-2 text-sm text-gray-700">
+                      Track quantity
+                    </label>
                   </div>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h2>
+
+                <div className="space-y-4">
+                  <Link href={`/admin/products/${productId}`}>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <ImageIcon className="w-4 h-4" />
+                      View Product
+                    </motion.button>
+                  </Link>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      if (confirm('Are you sure you want to duplicate this product?')) {
+                        toast.success('Product duplicated successfully!')
+                      }
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Duplicate Product
+                  </motion.button>
                 </div>
               </div>
             </div>

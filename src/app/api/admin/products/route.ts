@@ -3,7 +3,59 @@ import connectDB from '@/lib/mongodb'
 import Product from '@/lib/models/Product'
 import { requireAdmin } from '@/lib/auth'
 
-export async function GET(request: NextRequest) {
+// Define interfaces
+interface AdminProductQuery {
+  category?: string
+  status?: string
+  $or?: Array<{
+    name?: { $regex: string; $options: string }
+    description?: { $regex: string; $options: string }
+    tags?: { $in: RegExp[] }
+  }>
+}
+
+interface CreateProductRequest {
+  name: string
+  description: string
+  price: string | number
+  comparePrice?: string | number
+  category: string
+  subCategory?: string
+  images?: string[]
+  variants?: any[]
+  tags?: string[]
+  status?: string
+  featured?: boolean
+  trackQuantity?: boolean
+  quantity?: string | number
+  weight?: string | number
+  dimensions?: any
+  seo?: any
+}
+
+interface UpdateProductRequest {
+  id: string
+  [key: string]: any
+}
+
+interface AdminProductSuccessResponse {
+  success: true
+  data?: any
+  pagination?: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+  }
+  message?: string
+}
+
+interface AdminProductErrorResponse {
+  success: false
+  error: string
+}
+
+export async function GET(request: NextRequest): Promise<NextResponse<AdminProductSuccessResponse | AdminProductErrorResponse>> {
   try {
     await connectDB()
 
@@ -23,8 +75,8 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const search = searchParams.get('search')
 
-    // Build query
-    const query: any = {}
+    // Build query with proper typing
+    const query: AdminProductQuery = {}
     
     if (category) {
       query.category = category
@@ -72,7 +124,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse<AdminProductSuccessResponse | AdminProductErrorResponse>> {
   try {
     await connectDB()
 
@@ -85,7 +137,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
+    const body: CreateProductRequest = await request.json()
     const {
       name,
       description,
@@ -116,12 +168,12 @@ export async function POST(request: NextRequest) {
     // Generate SKU
     const sku = `BIND-${category.toUpperCase()}-${Date.now()}`
 
-    // Create product
+    // Create product with proper type conversion
     const product = new Product({
       name,
       description,
-      price: parseFloat(price),
-      comparePrice: comparePrice ? parseFloat(comparePrice) : undefined,
+      price: typeof price === 'string' ? parseFloat(price) : price,
+      comparePrice: comparePrice ? (typeof comparePrice === 'string' ? parseFloat(comparePrice) : comparePrice) : undefined,
       category,
       subCategory,
       images: images || [],
@@ -131,11 +183,11 @@ export async function POST(request: NextRequest) {
       featured: featured || false,
       inventory: {
         trackQuantity: trackQuantity !== false,
-        quantity: trackQuantity ? parseInt(quantity) || 0 : null,
+        quantity: trackQuantity ? (quantity ? (typeof quantity === 'string' ? parseInt(quantity) : quantity) || 0 : 0) : null,
         sku
       },
       shipping: {
-        weight: weight ? parseFloat(weight) : undefined,
+        weight: weight ? (typeof weight === 'string' ? parseFloat(weight) : weight) : undefined,
         dimensions: dimensions || {}
       },
       seo: seo || {},

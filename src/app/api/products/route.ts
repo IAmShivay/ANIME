@@ -2,8 +2,48 @@ import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Product from '@/lib/models/Product'
 
+// Define query interface
+interface ProductQuery {
+  category?: string
+  subCategory?: string
+  featured?: boolean
+  $text?: { $search: string }
+  price?: {
+    $gte?: number
+    $lte?: number
+  }
+}
+
+// Define sort interface
+interface SortObject {
+  [key: string]: 1 | -1
+}
+
+// Define pagination interface
+interface PaginationInfo {
+  page: number
+  limit: number
+  total: number
+  pages: number
+  hasNext: boolean
+  hasPrev: boolean
+}
+
+// Define response interfaces
+interface ProductsSuccessResponse {
+  success: true
+  data: any[]
+  pagination: PaginationInfo
+}
+
+interface ProductsErrorResponse {
+  success: false
+  error: string
+  message?: string
+}
+
 // GET /api/products - Get all products with filtering and pagination
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse<ProductsSuccessResponse | ProductsErrorResponse>> {
   try {
     await connectDB()
 
@@ -19,8 +59,8 @@ export async function GET(request: NextRequest) {
     const minPrice = searchParams.get('minPrice')
     const maxPrice = searchParams.get('maxPrice')
 
-    // Build query
-    const query: any = {}
+    // Build query with proper typing
+    const query: ProductQuery = {}
 
     if (category) {
       query.category = category
@@ -44,8 +84,8 @@ export async function GET(request: NextRequest) {
       if (maxPrice) query.price.$lte = parseFloat(maxPrice)
     }
 
-    // Build sort object
-    const sortObj: any = {}
+    // Build sort object with proper typing
+    const sortObj: SortObject = {}
     sortObj[sort] = order === 'desc' ? -1 : 1
 
     // Calculate pagination

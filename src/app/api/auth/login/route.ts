@@ -4,11 +4,40 @@ import bcrypt from 'bcryptjs'
 import connectDB from '@/lib/mongodb'
 import User from '@/lib/models/User'
 
-export async function POST(request: NextRequest) {
+// Define request body interface
+interface LoginRequest {
+  email: string
+  password: string
+}
+
+// Define response interfaces
+interface LoginSuccessResponse {
+  success: true
+  data: {
+    user: {
+      id: string
+      name: string
+      email: string
+      role: string
+      avatar?: string
+    }
+    token: string
+  }
+  message: string
+}
+
+interface LoginErrorResponse {
+  success: false
+  error: string
+  message?: string
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse<LoginSuccessResponse | LoginErrorResponse>> {
   try {
     await connectDB()
 
-    const { email, password } = await request.json()
+    const body: LoginRequest = await request.json()
+    const { email, password } = body
 
     console.log('Login attempt for:', email)
 

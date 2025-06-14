@@ -4,8 +4,69 @@ import Order from '@/lib/models/Order'
 import Product from '@/lib/models/Product'
 import { verifyToken } from '@/lib/auth'
 
+// Define interfaces
+interface OrderQuery {
+  user: string
+  orderStatus?: string
+}
+
+interface OrderItem {
+  productId: string
+  variant?: {
+    size?: string
+    color?: string
+  }
+  quantity: number
+}
+
+interface Address {
+  firstName: string
+  lastName: string
+  address1: string
+  address2?: string
+  city: string
+  state: string
+  zipCode: string
+  country: string
+  phone?: string
+}
+
+interface PaymentMethod {
+  type: 'razorpay' | 'cod'
+  status?: string
+  transactionId?: string
+}
+
+interface CreateOrderRequest {
+  items: OrderItem[]
+  shippingAddress: Address
+  billingAddress: Address
+  paymentMethod: PaymentMethod
+  notes?: string
+}
+
+interface OrdersSuccessResponse {
+  success: true
+  data: any[]
+  pagination?: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+    hasNext: boolean
+    hasPrev: boolean
+  }
+  message?: string
+}
+
+interface OrdersErrorResponse {
+  success: false
+  error: string
+  message?: string
+}
+
 // GET /api/orders - Get user's orders
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse<OrdersSuccessResponse | OrdersErrorResponse>> {
   try {
     await connectDB()
 
@@ -22,7 +83,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10')
     const status = searchParams.get('status')
 
-    const query: any = { user: user.userId }
+    const query: OrderQuery = { user: user.userId }
     if (status) {
       query.orderStatus = status
     }
@@ -67,7 +128,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/orders - Create a new order
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse<OrdersSuccessResponse | OrdersErrorResponse>> {
   try {
     await connectDB()
 
@@ -79,13 +140,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const body: CreateOrderRequest = await request.json()
     const {
       items,
       shippingAddress,
       billingAddress,
       paymentMethod,
       notes,
-    } = await request.json()
+    } = body
 
     // Validate required fields
     if (!items || !Array.isArray(items) || items.length === 0) {

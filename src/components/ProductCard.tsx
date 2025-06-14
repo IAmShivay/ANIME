@@ -30,6 +30,7 @@ export const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         name: product.name,
         price: product.price,
         image: product.images[0],
+        quantity: 1,
         maxQuantity: product.inventory.quantity,
       }))
       toast.success('Added to cart!')

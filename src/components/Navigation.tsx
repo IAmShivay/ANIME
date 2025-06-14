@@ -80,6 +80,7 @@ export const Navbar = () => {
 
   // Memoize functions for performance
   const isActive = useCallback((path: string) => {
+    if (!pathname) return false
     if (path === '/shop') {
       return pathname === '/shop' || pathname.startsWith('/shop')
     }

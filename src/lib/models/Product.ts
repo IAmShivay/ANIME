@@ -180,16 +180,30 @@ ProductSchema.virtual('slug').get(function() {
 
 // Pre-save middleware
 ProductSchema.pre('save', function(next) {
-  // Auto-generate SEO title if not provided
-  if (!this.seo.title) {
-    this.seo.title = this.name
+  // Initialize SEO object if not exists
+  if (!this.seo) {
+    this.seo = {
+      title: this.name,
+      description: this.description.substring(0, 160),
+      keywords: []
+    }
+  } else {
+    // Auto-generate SEO title if not provided
+    if (!this.seo.title) {
+      this.seo.title = this.name
+    }
+
+    // Auto-generate SEO description if not provided
+    if (!this.seo.description) {
+      this.seo.description = this.description.substring(0, 160)
+    }
+
+    // Initialize keywords if not provided
+    if (!this.seo.keywords) {
+      this.seo.keywords = []
+    }
   }
-  
-  // Auto-generate SEO description if not provided
-  if (!this.seo.description) {
-    this.seo.description = this.description.substring(0, 160)
-  }
-  
+
   next()
 })
 
